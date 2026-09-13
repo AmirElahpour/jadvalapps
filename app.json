@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "جداول",
+    "slug": "jadvalapps",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0F172A",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "UISupportsTrueScreens": true
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0F172A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "experiments": {
+      "baseUrl": "/jadvalapps"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-sharing"
+    ]
+  }
+}
