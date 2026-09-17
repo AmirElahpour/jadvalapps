@@ -290,10 +290,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
-  listWrap: { paddingHorizontal: 12, gap: 8, paddingBottom: 130 },
+  listWrap: { paddingHorizontal: 14, gap: 10, paddingBottom: 110 },
   empty: {
-    marginHorizontal: 12,
-    marginTop: 8,
+    marginHorizontal: 14,
+    marginTop: 10,
     borderRadius: 16,
     borderWidth: 1,
     padding: 28,

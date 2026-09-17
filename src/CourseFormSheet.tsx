@@ -114,9 +114,36 @@ const sessionStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pickersWrap: { gap: 8 },
-  pickerLabel: { fontSize: 12, textAlign: 'right' },
+  pickersWrap: { gap: 10, marginTop: 4 },
+  slotChip: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 3,
+    gap: 4,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 7,
+    borderRadius: 9,
+  },
 });
+
+const UNIVERSITY_SLOTS = [
+  { label: '۰۸:۰۰ - ۱۰:۰۰', h1: 8, m1: 0, h2: 10, m2: 0 },
+  { label: '۱۰:۰۰ - ۱۲:۰۰', h1: 10, m1: 0, h2: 12, m2: 0 },
+  { label: '۱۳:۳۰ - ۱۵:۰۰', h1: 13, m1: 30, h2: 15, m2: 0 },
+  { label: '۱۵:۱۵ - ۱۷:۰۰', h1: 15, m1: 15, h2: 17, m2: 0 },
+  { label: '۱۷:۰۰ - ۱۹:۰۰', h1: 17, m1: 0, h2: 19, m2: 0 },
+];
 
 function SessionEditor({
   index,
@@ -133,6 +160,8 @@ function SessionEditor({
 }) {
   const { p, font, radius } = useTheme();
   const [open, setOpen] = useState(index === 0 && !session.touched);
+  const [activeTab, setActiveTab] = useState<'start' | 'end'>('start');
+
   return (
     <View style={[sessionStyles.sessionCard, { backgroundColor: p.surfaceAlt, borderColor: p.border }]}>
       <View style={sessionStyles.sessionHead}>
@@ -182,7 +211,7 @@ function SessionEditor({
           <View style={[sessionStyles.timeIcon, { backgroundColor: p.chipBg }]}>
             <IconClock size={14} color={p.primary} />
           </View>
-          <Text style={{ fontFamily: font.bold, fontSize: 14, color: p.text }}>
+          <Text style={{ fontFamily: font.bold, fontSize: 13.5, color: p.text }}>
             {toPersianDigits(pad2(session.h1) + ':' + pad2(session.m1))} تا{' '}
             {toPersianDigits(pad2(session.h2) + ':' + pad2(session.m2))}
           </Text>
@@ -193,18 +222,112 @@ function SessionEditor({
       </Pressable>
       {open ? (
         <View style={sessionStyles.pickersWrap}>
-          <Text style={[sessionStyles.pickerLabel, { color: p.textDim, fontFamily: font.medium }]}>از ساعت</Text>
-          <TimePicker
-            hour={session.h1}
-            minute={session.m1}
-            onChange={(h, m) => onChange({ ...session, h1: h, m1: m, touched: true })}
-          />
-          <Text style={[sessionStyles.pickerLabel, { color: p.textDim, fontFamily: font.medium }]}>تا ساعت</Text>
-          <TimePicker
-            hour={session.h2}
-            minute={session.m2}
-            onChange={(h, m) => onChange({ ...session, h2: h, m2: m, touched: true })}
-          />
+          {/* Quick university slots */}
+          <View style={{ gap: 5 }}>
+            <Text style={{ fontFamily: font.medium, fontSize: 11, color: p.textFaint, textAlign: 'right' }}>
+              اسلات‌های پرکاربرد دانشگاهی:
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5 }}>
+              {UNIVERSITY_SLOTS.map((slot) => {
+                const on =
+                  session.h1 === slot.h1 &&
+                  session.m1 === slot.m1 &&
+                  session.h2 === slot.h2 &&
+                  session.m2 === slot.m2;
+                return (
+                  <Pressable
+                    key={slot.label}
+                    onPress={() => {
+                      onChange({
+                        ...session,
+                        h1: slot.h1,
+                        m1: slot.m1,
+                        h2: slot.h2,
+                        m2: slot.m2,
+                        touched: true,
+                      });
+                    }}
+                    style={[
+                      sessionStyles.slotChip,
+                      {
+                        backgroundColor: on ? p.primary + '22' : p.surface,
+                        borderColor: on ? p.primary : p.borderSoft,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: on ? font.bold : font.regular,
+                        fontSize: 11,
+                        color: on ? p.primary : p.textDim,
+                      }}
+                    >
+                      {slot.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Segmented start / end time tabs */}
+          <View style={[sessionStyles.tabBar, { backgroundColor: p.surface, borderColor: p.borderSoft }]}>
+            <Pressable
+              onPress={() => setActiveTab('start')}
+              style={[
+                sessionStyles.tabItem,
+                activeTab === 'start' && {
+                  backgroundColor: p.primary,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  fontFamily: activeTab === 'start' ? font.bold : font.medium,
+                  fontSize: 12,
+                  color: activeTab === 'start' ? p.primaryText : p.textDim,
+                }}
+              >
+                شروع: {toPersianDigits(pad2(session.h1) + ':' + pad2(session.m1))}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setActiveTab('end')}
+              style={[
+                sessionStyles.tabItem,
+                activeTab === 'end' && {
+                  backgroundColor: p.primary,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  fontFamily: activeTab === 'end' ? font.bold : font.medium,
+                  fontSize: 12,
+                  color: activeTab === 'end' ? p.primaryText : p.textDim,
+                }}
+              >
+                پایان: {toPersianDigits(pad2(session.h2) + ':' + pad2(session.m2))}
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Single compact TimePicker */}
+          {activeTab === 'start' ? (
+            <TimePicker
+              hour={session.h1}
+              minute={session.m1}
+              hidePresets
+              onChange={(h, m) => onChange({ ...session, h1: h, m1: m, touched: true })}
+            />
+          ) : (
+            <TimePicker
+              hour={session.h2}
+              minute={session.m2}
+              hidePresets
+              onChange={(h, m) => onChange({ ...session, h2: h, m2: m, touched: true })}
+            />
+          )}
         </View>
       ) : null}
     </View>
@@ -295,44 +418,58 @@ function ToggleSwitch({
 
   const trackBg = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [mode === 'dark' ? '#242F46' : '#CBD5E1', p.primary],
+    outputRange: [mode === 'dark' ? '#222B3D' : '#E2E8F0', p.primary],
+  });
+
+  const borderColor = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [mode === 'dark' ? '#3B4863' : '#CBD5E1', p.primary],
   });
 
   const thumbLeft = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [3, 25],
+    outputRange: [3, 23],
   });
 
   return (
-    <View
-      // @ts-ignore
-      dir="ltr"
-      style={{
-        width: 50,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: trackBg as any,
-        position: 'relative',
-        overflow: 'hidden',
-      }}
+    <Pressable
+      onPress={() => onValueChange(!value)}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      style={{ padding: 2 }}
     >
       <Animated.View
+        // @ts-ignore
+        dir="ltr"
         style={{
-          width: 22,
-          height: 22,
-          borderRadius: 11,
-          backgroundColor: '#FFFFFF',
-          position: 'absolute',
-          top: 3,
-          left: thumbLeft,
-          shadowColor: '#000',
-          shadowOpacity: 0.25,
-          shadowRadius: 3,
-          shadowOffset: { width: 0, height: 1 },
-          elevation: 3,
+          width: 48,
+          height: 28,
+          borderRadius: 14,
+          backgroundColor: trackBg,
+          borderWidth: 1.5,
+          borderColor: borderColor,
+          position: 'relative',
+          justifyContent: 'center',
         }}
-      />
-    </View>
+      >
+        <Animated.View
+          style={{
+            width: 20,
+            height: 20,
+            borderRadius: 10,
+            backgroundColor: '#FFFFFF',
+            position: 'absolute',
+            top: 2.5,
+            left: thumbLeft,
+            shadowColor: '#000',
+            shadowOpacity: 0.22,
+            shadowRadius: 2.5,
+            shadowOffset: { width: 0, height: 1.5 },
+            elevation: 3,
+          }}
+        />
+      </Animated.View>
+    </Pressable>
   );
 }
 

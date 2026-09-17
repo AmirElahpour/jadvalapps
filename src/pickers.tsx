@@ -42,7 +42,7 @@ function p2(n: number) {
 
 // ============ Wheel (scroll-snap column) ============
 
-const ITEM_H = 42;
+const ITEM_H = 34;
 const VISIBLE = 3;
 const WHEEL_H = ITEM_H * VISIBLE;
 
@@ -130,10 +130,10 @@ function Wheel({
           style={{
             position: 'absolute',
             top: ITEM_H,
-            left: 5,
-            right: 5,
+            left: 4,
+            right: 4,
             height: ITEM_H,
-            borderRadius: 13,
+            borderRadius: 10,
             backgroundColor: p.primary + '1A',
             borderWidth: 1,
             borderColor: p.primary + '45',
@@ -164,7 +164,7 @@ function Wheel({
                 <Text
                   style={{
                     fontFamily: on ? font.black : font.medium,
-                    fontSize: on ? 21 : 16,
+                    fontSize: on ? 18 : 13.5,
                     color: on ? p.text : p.textFaint,
                   }}
                 >
@@ -195,12 +195,12 @@ function Wheel({
         <LinearGradient
           pointerEvents="none"
           colors={[p.surface, p.surface + '00']}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ITEM_H * 0.9 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ITEM_H * 0.8 }}
         />
         <LinearGradient
           pointerEvents="none"
           colors={[p.surface + '00', p.surface]}
-          style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: ITEM_H * 0.9 }}
+          style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: ITEM_H * 0.8 }}
         />
       </View>
     </View>
@@ -210,7 +210,8 @@ function Wheel({
 // ============ TimePicker2 ============
 
 const HOURS = Array.from({ length: 24 }, (_, i) => toPersianDigits(p2(i)));
-const MINUTES = Array.from({ length: 60 }, (_, i) => toPersianDigits(p2(i)));
+const MINUTE_STEPS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+const MINUTES = MINUTE_STEPS.map((m) => toPersianDigits(p2(m)));
 
 const PRESETS = [
   { label: '۷:۳۰', h: 7, m: 30 },
@@ -234,19 +235,30 @@ export function TimePicker2({
   hour,
   minute,
   onChange,
+  hidePresets = false,
 }: {
   hour: number;
   minute: number;
   onChange: (h: number, m: number) => void;
+  hidePresets?: boolean;
 }) {
   const { p, font } = useTheme();
 
+  // Find the closest index in MINUTE_STEPS (step of 5)
+  const minuteIndex = clamp(
+    MINUTE_STEPS.findIndex((m) => Math.abs(m - minute) <= 2) !== -1
+      ? MINUTE_STEPS.findIndex((m) => Math.abs(m - minute) <= 2)
+      : Math.round(minute / 5),
+    0,
+    MINUTE_STEPS.length - 1
+  );
+
   return (
     <View style={[tp.wrap, { backgroundColor: p.surfaceAlt, borderColor: p.border }]}>
-      {/* Big feedback display */}
+      {/* Compact feedback display */}
       <View style={tp.displayRow}>
         <View style={[tp.dayPartChip, { backgroundColor: p.primary + '14' }]}>
-          <Text style={{ fontFamily: font.medium, fontSize: 11, color: p.primary }}>
+          <Text style={{ fontFamily: font.medium, fontSize: 10.5, color: p.primary }}>
             {dayPartLabel(hour)}
           </Text>
         </View>
@@ -254,7 +266,7 @@ export function TimePicker2({
           <Text
             style={{
               fontFamily: font.black,
-              fontSize: 30,
+              fontSize: 22,
               color: p.text,
               writingDirection: 'ltr',
             }}
@@ -264,7 +276,7 @@ export function TimePicker2({
             {toPersianDigits(p2(minute))}
           </Text>
         </View>
-        <View style={{ width: 56 }} />
+        <View style={{ width: 44 }} />
       </View>
 
       {/* Wheels — Digital time format: Hour on the LEFT, Minute on the RIGHT */}
@@ -278,75 +290,77 @@ export function TimePicker2({
         ]}
       >
         <View style={tp.wheelCol}>
-          <Wheel items={HOURS} selected={hour} onSelect={(i) => onChange(i, minute)} width={86} />
+          <Wheel items={HOURS} selected={hour} onSelect={(i) => onChange(i, minute)} width={76} />
           <Text style={[tp.wheelLabel, { fontFamily: font.medium, color: p.textFaint }]}>ساعت</Text>
         </View>
-        <Text style={{ fontFamily: font.black, fontSize: 26, color: p.textFaint, marginTop: 6 }}>
+        <Text style={{ fontFamily: font.black, fontSize: 22, color: p.textFaint, marginTop: 4 }}>
           :
         </Text>
         <View style={tp.wheelCol}>
           <Wheel
             items={MINUTES}
-            selected={minute}
-            onSelect={(i) => onChange(hour, i)}
-            width={86}
+            selected={minuteIndex}
+            onSelect={(i) => onChange(hour, MINUTE_STEPS[i])}
+            width={76}
           />
           <Text style={[tp.wheelLabel, { fontFamily: font.medium, color: p.textFaint }]}>دقیقه</Text>
         </View>
       </View>
 
       {/* Quick presets */}
-      <View style={tp.presetsRow}>
-        {PRESETS.map((x) => {
-          const on = x.h === hour && x.m === minute;
-          return (
-            <Pressable
-              key={x.label}
-              onPress={() => {
-                tap();
-                onChange(x.h, x.m);
-              }}
-              style={[
-                tp.preset,
-                {
-                  backgroundColor: on ? p.primary : p.surface,
-                  borderColor: on ? p.primary : p.border,
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  fontFamily: on ? font.bold : font.medium,
-                  fontSize: 12.5,
-                  color: on ? p.primaryText : p.textDim,
+      {!hidePresets ? (
+        <View style={tp.presetsRow}>
+          {PRESETS.map((x) => {
+            const on = x.h === hour && x.m === minute;
+            return (
+              <Pressable
+                key={x.label}
+                onPress={() => {
+                  tap();
+                  onChange(x.h, x.m);
                 }}
+                style={[
+                  tp.preset,
+                  {
+                    backgroundColor: on ? p.primary : p.surface,
+                    borderColor: on ? p.primary : p.border,
+                  },
+                ]}
               >
-                {x.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+                <Text
+                  style={{
+                    fontFamily: on ? font.bold : font.medium,
+                    fontSize: 11.5,
+                    color: on ? p.primaryText : p.textDim,
+                  }}
+                >
+                  {x.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const tp = StyleSheet.create({
-  wrap: { borderWidth: 1, borderRadius: 20, padding: 12, gap: 6 },
-  displayRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
-  dayPartChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  wrap: { borderWidth: 1, borderRadius: 16, padding: 8, gap: 4 },
+  displayRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 2 },
+  dayPartChip: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   wheelsRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'center',
-    gap: 10,
-    marginTop: 6,
-    paddingTop: 12,
+    gap: 8,
+    marginTop: 4,
+    paddingTop: 8,
   },
-  wheelCol: { alignItems: 'center', gap: 5 },
-  wheelLabel: { fontSize: 11 },
-  presetsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingVertical: 10, paddingHorizontal: 2 },
-  preset: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  wheelCol: { alignItems: 'center', gap: 4 },
+  wheelLabel: { fontSize: 10 },
+  presetsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, paddingVertical: 6, paddingHorizontal: 2 },
+  preset: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
 });
 
 // ============ JalaliDatePicker2 ============
