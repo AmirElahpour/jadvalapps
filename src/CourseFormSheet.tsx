@@ -2,7 +2,7 @@
  * Add/Edit course bottom sheet — form, sessions editor, exam picker, validation.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Switch } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from './themeContext';
 import { ModalSheet, Field, PrimaryButton, GhostButton } from './components';
@@ -274,6 +274,65 @@ function ColorRow({ draft, setS }: { draft: DraftState; setS: (p: Partial<DraftS
   );
 }
 
+function ToggleSwitch({
+  value,
+  onValueChange,
+}: {
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+}) {
+  const { p, mode } = useTheme();
+  const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.spring(anim, {
+      toValue: value ? 1 : 0,
+      useNativeDriver: false,
+      friction: 9,
+      tension: 60,
+    }).start();
+  }, [value]);
+
+  const trackBg = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [mode === 'dark' ? '#2A374F' : '#CBD5E1', p.primary],
+  });
+
+  const thumbLeft = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [3, 23],
+  });
+
+  return (
+    <View
+      style={{
+        width: 48,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: trackBg as any,
+        justifyContent: 'center',
+        position: 'relative',
+      }}
+    >
+      <Animated.View
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 11,
+          backgroundColor: '#FFFFFF',
+          position: 'absolute',
+          left: thumbLeft,
+          shadowColor: '#000',
+          shadowOpacity: 0.25,
+          shadowRadius: 3,
+          shadowOffset: { width: 0, height: 1 },
+          elevation: 3,
+        }}
+      />
+    </View>
+  );
+}
+
 
 function CourseFormSheetInner({
   visible,
@@ -426,23 +485,29 @@ function CourseFormSheetInner({
         <ColorRow draft={draft} setS={setS} />
 
         {/* ---- Exam ---- */}
-        <View style={[formStyles.examCard, { borderColor: p.borderSoft, backgroundColor: p.surfaceAlt }]}>
-          <View style={formStyles.examRow}>
+        <View style={[formStyles.examCard, { borderColor: draft.hasExam ? p.primary + '55' : p.borderSoft, backgroundColor: p.surfaceAlt }]}>
+          <Pressable
+            onPress={() => {
+              try {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              } catch {}
+              setS({ hasExam: !draft.hasExam });
+            }}
+            style={formStyles.examRow}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={[formStyles.sectionIcon, { backgroundColor: p.chipBg }]}>
-                <IconCalendar size={15} color={p.primary} />
+              <View style={[formStyles.sectionIcon, { backgroundColor: draft.hasExam ? p.primary + '22' : p.chipBg }]}>
+                <IconCalendar size={15} color={draft.hasExam ? p.primary : p.textDim} />
               </View>
               <Text style={{ fontFamily: font.medium, color: p.text, fontSize: 14 }}>
                 این درس آزمون دارد
               </Text>
             </View>
-            <Switch
+            <ToggleSwitch
               value={draft.hasExam}
               onValueChange={(v) => setS({ hasExam: v })}
-              trackColor={{ false: p.border, true: p.primary }}
-              thumbColor="#FFFFFF"
             />
-          </View>
+          </Pressable>
           {draft.hasExam ? (
             <View style={formStyles.examPickers}>
               <Pressable
@@ -454,7 +519,9 @@ function CourseFormSheetInner({
                   {toPersianDigits(draft.exam.jy + '/' + String(draft.exam.jm).padStart(2, '0') + '/' + String(draft.exam.jd).padStart(2, '0'))}
                 </Text>
                 <View style={{ flex: 1 }} />
-                <IconChevronDownNative size={15} color={p.textFaint} />
+                <View style={{ transform: [{ rotate: showExamDate ? '180deg' : '0deg' }] }}>
+                  <IconChevronDownNative size={15} color={p.textFaint} />
+                </View>
               </Pressable>
               {showExamDate ? (
                 <JalaliDatePicker value={draft.exam} onChange={(v) => setS({ exam: v })} />
@@ -468,7 +535,9 @@ function CourseFormSheetInner({
                   {toPersianDigits(String(draft.examTime.h).padStart(2, '0') + ':' + String(draft.examTime.m).padStart(2, '0'))}
                 </Text>
                 <View style={{ flex: 1 }} />
-                <IconChevronDownNative size={15} color={p.textFaint} />
+                <View style={{ transform: [{ rotate: showExamTime ? '180deg' : '0deg' }] }}>
+                  <IconChevronDownNative size={15} color={p.textFaint} />
+                </View>
               </Pressable>
               {showExamTime ? (
                 <TimePicker
