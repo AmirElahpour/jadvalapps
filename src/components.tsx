@@ -243,11 +243,6 @@ export function Field({
             *
           </Text>
         ) : null}
-        {optional ? (
-          <Text style={{ color: p.textFaint, fontFamily: font.regular, fontSize: 11, marginStart: 6 }}>
-            (اختیاری)
-          </Text>
-        ) : null}
       </View>
       <TextInput
         value={value}

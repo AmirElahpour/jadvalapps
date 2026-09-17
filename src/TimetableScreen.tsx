@@ -15,7 +15,6 @@ import {
   toPersianDigits,
   timeToMinutes,
   formatJalali,
-  COURSE_SWATCHES,
 } from './logic';
 import { IconClock, IconCalendar, IconBook, IconInfo, IconMapPin } from './icons';
 
@@ -183,7 +182,7 @@ export function CourseDetailSheet({
   onEdit: (c: import('./logic').Course) => void;
   onDelete: (c: import('./logic').Course) => void;
 }) {
-  const { courses, theme, updateCourse } = useStore();
+  const { courses, theme } = useStore();
   const { p, font, radius } = useTheme();
   const course = courses.find((c) => c.id === courseId) ?? null;
 
@@ -224,29 +223,6 @@ export function CourseDetailSheet({
               : 'ندارد'
           }
         />
-      </View>
-
-      {/* Quick recolor without opening the full edit form */}
-      <Text style={[styles.sessionsTitle, { fontFamily: font.bold, color: p.text }]}>رنگ درس</Text>
-      <View style={styles.detailSwatches}>
-        {COURSE_SWATCHES.map((c) => {
-          const on = course.color === c;
-          return (
-            <Pressable
-              key={c}
-              onPress={() => updateCourse({ ...course, color: on ? undefined : c })}
-              accessibilityLabel={'رنگ ' + c}
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 15,
-                backgroundColor: c,
-                borderColor: on ? p.text : 'transparent',
-                borderWidth: on ? 2.5 : 0,
-              }}
-            />
-          );
-        })}
       </View>
 
       <Text style={[styles.sessionsTitle, { fontFamily: font.bold, color: p.text }]}>جلسات هفتگی</Text>
@@ -338,7 +314,6 @@ const styles = StyleSheet.create({
   detailCard: { padding: 12, gap: 10, marginBottom: 12 },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   sessionsTitle: { fontSize: 14, marginBottom: 8, marginTop: 4, textAlign: 'right' },
-  detailSwatches: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   sessionRow: {
     flexDirection: 'row',
     alignItems: 'center',
