@@ -15,6 +15,7 @@ import {
   TextInputProps,
   ActivityIndicator,
   PanResponder,
+  Platform,
 } from 'react-native';
 import { useTheme } from './themeContext';
 import { toEnglishDigits } from './logic';
@@ -223,6 +224,29 @@ export function Field({
 }) {
   const { p, font, radius } = useTheme();
   const [focused, setFocused] = useState(false);
+  const focusAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(focusAnim, {
+      toValue: focused ? 1 : 0,
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [focused]);
+
+  const borderColor = error
+    ? p.danger
+    : focusAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [p.border, p.primary],
+      });
+
+  const bgColor = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [p.surfaceAlt, p.surface],
+  });
+
   return (
     <View style={{ marginBottom: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
@@ -244,27 +268,51 @@ export function Field({
           </Text>
         ) : null}
       </View>
-      <TextInput
-        value={value}
-        onChangeText={(t) => onChangeText(numeric ? toEnglishDigits(t) : t)}
-        placeholder={placeholder}
-        placeholderTextColor={p.textFaint}
-        autoFocus={autoFocus}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        keyboardType={numeric ? 'number-pad' : 'default'}
+      <Animated.View
         style={[
-          styles.input,
+          styles.inputWrap,
           {
-            fontFamily: font.regular,
-            color: p.text,
-            backgroundColor: focused ? p.surface : p.surfaceAlt,
-            borderColor: error ? p.danger : focused ? p.primary : p.border,
-            borderWidth: error ? 1.8 : focused ? 1.5 : 1,
-            textAlign: 'right',
+            backgroundColor: bgColor,
+            borderColor: borderColor,
+            borderRadius: radius.md,
           },
+          Platform.OS === 'web'
+            ? ({
+                boxShadow: error
+                  ? `0 0 0 3px ${p.danger}26`
+                  : focused
+                  ? `0 0 0 3.5px ${p.primary}2E`
+                  : 'none',
+                transition: 'box-shadow 0.18s ease',
+              } as any)
+            : {
+                shadowColor: error ? p.danger : p.primary,
+                shadowOpacity: focused ? 0.18 : 0,
+                shadowRadius: 5,
+                shadowOffset: { width: 0, height: 1 },
+                elevation: focused ? 2 : 0,
+              },
         ]}
-      />
+      >
+        <TextInput
+          value={value}
+          onChangeText={(t) => onChangeText(numeric ? toEnglishDigits(t) : t)}
+          placeholder={placeholder}
+          placeholderTextColor={p.textFaint}
+          autoFocus={autoFocus}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          keyboardType={numeric ? 'number-pad' : 'default'}
+          style={[
+            styles.input,
+            {
+              fontFamily: font.regular,
+              color: p.text,
+            },
+            Platform.OS === 'web' ? ({ outlineStyle: 'none', outline: 'none' } as any) : {},
+          ]}
+        />
+      </Animated.View>
       {error ? (
         <Text style={[styles.errText, { fontFamily: font.medium, color: p.danger }]}>
           {error}
@@ -320,12 +368,17 @@ const styles = StyleSheet.create({
   },
   ghostLabel: { fontSize: 14 },
   fieldLabel: { fontSize: 13, marginBottom: 6, textAlign: 'right' },
+  inputWrap: {
+    borderWidth: 1.5,
+    overflow: 'hidden',
+  },
   input: {
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
     paddingHorizontal: 14,
     paddingVertical: 11,
     fontSize: 15,
+    textAlign: 'right',
   },
   errText: { fontSize: 12, marginTop: 5, textAlign: 'right' },
 });

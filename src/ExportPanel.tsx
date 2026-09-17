@@ -213,6 +213,7 @@ export function ExportPanel({ visible, onClose, toast }: Props) {
               style={[
                 styles.capInput,
                 { fontFamily: font.bold, color: p.text, borderColor: p.border, backgroundColor: p.surface, borderRadius: radius.md },
+                Platform.OS === 'web' ? ({ outlineStyle: 'none', outline: 'none' } as any) : {},
               ]}
             />
             <Pressable
