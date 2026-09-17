@@ -31,10 +31,8 @@ import {
 import { DayTabs, SessionList, CourseDetailSheet } from './src/TimetableScreen';
 import { CourseFormSheet } from './src/CourseFormSheet';
 import { ExportPanel } from './src/ExportPanel';
-import { WeekGrid } from './src/WeekGrid';
 import { Course, Day, nextId, toPersianDigits, totalUnits, timeToMinutes, DAYS } from './src/logic';
 import { parseShareLinkHash } from './src/export';
-import * as DocumentPickerLib from 'expo-document-picker';
 import { useFonts } from 'expo-font';
 import { I18nManager } from 'react-native';
 import VazirmatnRegular from './assets/fonts/VazirmatnRegular.ttf';
@@ -63,7 +61,6 @@ function Shell() {
   const [deleteTarget, setDeleteTarget] = useState<Course | null>(null);
   const [toasts, setToasts] = useState<{ id: number; message: string; kind: 'success' | 'error' | 'info' }[]>([]);
   const toastId = useRef(1);
-  const gridRef = useRef<View | null>(null);
   // Default to today's weekday (Jalali) so the list shows relevant sessions on open.
   const [selectedDay, setSelectedDay] = useState<Day>(() => DAYS[todayJalaliIndex()] ?? DAYS[0]);
 
@@ -134,18 +131,6 @@ function Shell() {
     }
   };
 
-  const pickDocument = async () => {
-    try {
-      const res = await DocumentPickerLib.getDocumentAsync({
-        copyToCacheDirectory: true,
-      });
-      if (res.canceled || !res.assets?.length) return null;
-      return { uri: res.assets[0].uri };
-    } catch {
-      return null;
-    }
-  };
-
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: p.bg }]}>
       <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={p.bg} />
@@ -191,8 +176,6 @@ function Shell() {
         visible={showExport}
         onClose={() => setShowExport(false)}
         toast={toast}
-        gridRef={gridRef}
-        documentPicker={pickDocument}
       />
 
       <DeleteConfirm
@@ -205,11 +188,6 @@ function Shell() {
       <Welcome visible={showWelcome} onDone={() => { setShowWelcome(false); store.setWelcomeSeen(true); }} />
       <About visible={showAbout} onClose={() => setShowAbout(false)} />
       <ToastStack toasts={toasts} />
-
-      {/* Off-screen grid for PNG capture */}
-      <View style={styles.offscreen} pointerEvents="none">
-        <WeekGrid gridRef={gridRef} />
-      </View>
     </SafeAreaView>
   );
 }
@@ -393,5 +371,4 @@ const styles = StyleSheet.create({
   barCol: { flex: 1, alignItems: 'center', gap: 5 },
   barTrack: { width: '70%', height: 44, justifyContent: 'flex-end', alignItems: 'center' },
   barDay: { fontSize: 9 },
-  offscreen: { position: 'absolute', left: -9999, top: 0, opacity: 1, zIndex: -999 },
 });

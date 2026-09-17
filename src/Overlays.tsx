@@ -92,8 +92,8 @@ const WELCOME_STEPS = [
   {
     icon: <IconShare size={34} color="#818CF8" />,
     tint: '#818CF8',
-    title: 'خروجی و اشتراک',
-    body: 'از دکمه اشتراک در نوار بالا: لینک اشتراک، PDF، تصویر جدول و پشتیبان JSON.',
+    title: 'پشتیبان و اشتراک',
+    body: 'از دکمه اشتراک در نوار بالا: لینک اشتراک مستقیم و فایل پشتیبان JSON.',
   },
 ];
 
@@ -177,7 +177,7 @@ export function AboutModal({ visible, onClose }: { visible: boolean; onClose: ()
         <View style={[styles.aboutLinks, { borderRadius: radius.lg, backgroundColor: p.surfaceAlt }]}>
           <AboutLink icon={<IconGrid size={16} color={p.primary} />} label="جدول هفتگی با رنگ ثابت برای هر درس" />
           <AboutLink icon={<IconClock size={16} color={p.primary} />} label="تشخیص خودکار تداخل زمانی هنگام ذخیره" />
-          <AboutLink icon={<IconShare size={16} color={p.primary} />} label="خروجی PDF، تصویر جدول و پشتیبان JSON" />
+          <AboutLink icon={<IconShare size={16} color={p.primary} />} label="لینک اشتراک و فایل پشتیبان JSON" />
         </View>
 
         <Text style={{ fontFamily: font.regular, fontSize: 11, color: p.textFaint, textAlign: 'center', marginTop: 12 }}>
