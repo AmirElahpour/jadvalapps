@@ -1,8 +1,9 @@
 /**
  * Add/Edit course bottom sheet — form, sessions editor, exam picker, validation.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Switch } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from './themeContext';
 import { ModalSheet, Field, PrimaryButton, GhostButton } from './components';
 import { JalaliDatePicker2 as JalaliDatePicker, TimePicker2 as TimePicker } from './pickers';
@@ -35,6 +36,7 @@ interface Props {
   onClose: () => void;
   onSave: (draft: Omit<Course, 'id'>) => void;
   onCancelEdit: () => void;
+  toast?: (message: string, kind?: 'success' | 'error' | 'info') => void;
 }
 
 interface DraftState {
@@ -281,8 +283,10 @@ function CourseFormSheetInner({
   onClose,
   onSave,
   onCancelEdit,
+  toast,
 }: Props) {
   const { p, font, radius } = useTheme();
+  const scrollRef = useRef<ScrollView>(null);
   const [draft, setDraft] = useState<DraftState>(freshDraft);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showExamDate, setShowExamDate] = useState(false);
@@ -323,6 +327,26 @@ function CourseFormSheetInner({
     const errs = validateCourse(editing ? { ...courseDraft, id: editing.id } : courseDraft, courses);
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
+      try {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      } catch {}
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+      const missing: string[] = [];
+      if (errs.name) missing.push('نام درس');
+      if (errs.code) missing.push('کد درس');
+      if (errs.units) missing.push('تعداد واحد');
+      if (missing.length > 0) {
+        toast?.(
+          missing.length === 1
+            ? `لطفاً ${missing[0]} را وارد کنید`
+            : `لطفاً فیلدهای الزامی (${missing.join('، ')}) را کامل کنید`,
+          'error'
+        );
+      } else if (errs.sessions) {
+        toast?.(errs.sessions, 'error');
+      } else if (errs.conflict) {
+        toast?.('تداخل زمانی با درس دیگری وجود دارد', 'error');
+      }
       return;
     }
     setBusy(true);
@@ -345,37 +369,56 @@ function CourseFormSheetInner({
       sessions: [...d.sessions, { day: 'شنبه', h1: 10, m1: 0, h2: 12, m2: 0 }],
     }));
 
+  const missingFields: string[] = [];
+  if (errors.name) missingFields.push('نام درس');
+  if (errors.code) missingFields.push('کد درس');
+  if (errors.units) missingFields.push('تعداد واحد');
+  const hasRequiredErrors = missingFields.length > 0;
+
   return (
     <ModalSheet visible={visible} onClose={onClose} title={editing ? 'ویرایش درس' : 'افزودن درس'} full>
-      <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} nestedScrollEnabled>
-        <Field
-          label="کد درس"
-          value={draft.code}
-          onChangeText={(t) => setS({ code: t })}
-          placeholder="مثلاً 60123452"
-          error={errors.code}
-          numeric
-        />
+      <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} nestedScrollEnabled>
         <Field
           label="نام درس"
           value={draft.name}
-          onChangeText={(t) => setS({ name: t })}
+          onChangeText={(t) => {
+            setS({ name: t });
+            if (errors.name) setErrors((e) => ({ ...e, name: undefined }));
+          }}
           placeholder="مثلاً ریاضی عمومی ۱"
           error={errors.name}
+          required
           autoFocus={false}
         />
-                  <Field
-        label="استاد"
-        value={draft.professor}
-        onChangeText={(t) => setS({ professor: t })}
-        placeholder="مثلاً دکتر احمدی"
-      />
+        <Field
+          label="کد درس"
+          value={draft.code}
+          onChangeText={(t) => {
+            setS({ code: t });
+            if (errors.code) setErrors((e) => ({ ...e, code: undefined }));
+          }}
+          placeholder="مثلاً 60123452"
+          error={errors.code}
+          required
+          numeric
+        />
+        <Field
+          label="استاد"
+          value={draft.professor}
+          onChangeText={(t) => setS({ professor: t })}
+          placeholder="مثلاً دکتر احمدی"
+          optional
+        />
         <Field
           label="تعداد واحد"
           value={draft.units}
-          onChangeText={(t) => setS({ units: t })}
+          onChangeText={(t) => {
+            setS({ units: t });
+            if (errors.units) setErrors((e) => ({ ...e, units: undefined }));
+          }}
           placeholder="مثلاً 3"
           error={errors.units}
+          required
           numeric
         />
 
@@ -505,11 +548,34 @@ function CourseFormSheetInner({
 
       {/* ---- Footer actions ---- */}
       <View style={formStyles.footer}>
+        {hasRequiredErrors ? (
+          <View
+            style={[
+              formStyles.validationAlert,
+              { backgroundColor: p.danger + '18', borderColor: p.danger },
+            ]}
+          >
+            <IconAlert size={16} color={p.danger} />
+            <Text
+              style={{
+                fontFamily: font.bold,
+                fontSize: 12.5,
+                color: p.danger,
+                flex: 1,
+                textAlign: 'right',
+              }}
+            >
+              {missingFields.length === 1
+                ? `لطفاً ${missingFields[0]} را وارد کنید`
+                : `لطفاً فیلدهای الزامی (${missingFields.join('، ')}) را کامل کنید`}
+            </Text>
+          </View>
+        ) : null}
         {editing ? (
           <GhostButton label="انصراف از ویرایش" onPress={onCancelEdit} />
         ) : null}
         <PrimaryButton
-          label={editing ? 'ذخیره تغییرات' : 'ذخیره'}
+          label={editing ? 'ذخیره تغییرات' : 'ذخیره درس'}
           onPress={handleSave}
           busy={busy}
         />
@@ -567,6 +633,16 @@ const formStyles = StyleSheet.create({
     marginTop: 10,
   },
   footer: { gap: 8, paddingTop: 8 },
+  validationAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginBottom: 4,
+  },
   addSessionBtn: {
     flexDirection: 'row',
     alignItems: 'center',

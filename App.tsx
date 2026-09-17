@@ -170,6 +170,7 @@ function Shell() {
         }}
         onSave={handleSave}
         onCancelEdit={handleCancelEdit}
+        toast={toast}
       />
 
       <ExportPanel

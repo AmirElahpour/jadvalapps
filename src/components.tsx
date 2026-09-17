@@ -207,6 +207,8 @@ export function Field({
   error,
   numeric,
   autoFocus,
+  required,
+  optional,
 }: {
   label: string;
   value: string;
@@ -215,12 +217,37 @@ export function Field({
   error?: string;
   numeric?: boolean;
   autoFocus?: boolean;
+  required?: boolean;
+  optional?: boolean;
 }) {
   const { p, font, radius } = useTheme();
   const [focused, setFocused] = useState(false);
   return (
     <View style={{ marginBottom: 12 }}>
-      <Text style={[styles.fieldLabel, { fontFamily: font.medium, color: focused ? p.primary : p.textDim }]}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+        <Text
+          style={[
+            styles.fieldLabel,
+            {
+              marginBottom: 0,
+              fontFamily: font.medium,
+              color: error ? p.danger : focused ? p.primary : p.textDim,
+            },
+          ]}
+        >
+          {label}
+        </Text>
+        {required ? (
+          <Text style={{ color: p.danger, fontFamily: font.black, fontSize: 16, marginStart: 4, lineHeight: 18 }}>
+            *
+          </Text>
+        ) : null}
+        {optional ? (
+          <Text style={{ color: p.textFaint, fontFamily: font.regular, fontSize: 11, marginStart: 6 }}>
+            (اختیاری)
+          </Text>
+        ) : null}
+      </View>
       <TextInput
         value={value}
         onChangeText={(t) => onChangeText(numeric ? toEnglishDigits(t) : t)}
@@ -237,12 +264,16 @@ export function Field({
             color: p.text,
             backgroundColor: focused ? p.surface : p.surfaceAlt,
             borderColor: error ? p.danger : focused ? p.primary : p.border,
-            borderWidth: error || focused ? 1.5 : 1,
+            borderWidth: error ? 1.8 : focused ? 1.5 : 1,
             textAlign: 'right',
           },
         ]}
       />
-      {error ? <Text style={[styles.errText, { fontFamily: font.regular, color: p.danger }]}>{error}</Text> : null}
+      {error ? (
+        <Text style={[styles.errText, { fontFamily: font.medium, color: p.danger }]}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }
