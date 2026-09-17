@@ -139,11 +139,10 @@ function Shell() {
       />
       <StatsRow />
       <DayTabs selected={selectedDay} onSelect={setSelectedDay} />
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, position: 'relative' }}>
         <SessionList day={selectedDay} onOpenCourse={(id) => store.setSelectedCourseId(id)} />
+        <Fab onPress={openAdd} />
       </View>
-
-      <Fab onPress={openAdd} />
 
       <AppFooter />
 

@@ -6,23 +6,29 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "backgroundColor": "#0F172A",
+    "backgroundColor": "#0A0E1A",
     "ios": {
       "supportsTablet": true,
+      "icon": "./assets/icon.png",
       "infoPlist": {
         "UISupportsTrueScreens": true
       }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0F172A",
+        "backgroundColor": "#0A0E1A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "جداول - برنامه‌ساز هفتگی دانشجو",
+      "shortName": "جداول",
+      "lang": "fa",
+      "themeColor": "#0A0E1A",
+      "backgroundColor": "#0A0E1A"
     },
     "experiments": {
       "baseUrl": "/jadvalapps"

@@ -2,7 +2,7 @@
  * Shell v2 — gradient RTL header, glowing FAB, glass toasts, footer.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from './themeContext';
 import { ModalSheet, GhostButton } from './components';
@@ -208,7 +208,7 @@ export function DeleteConfirm({
 export function AppFooter() {
   const { p, font } = useTheme();
   return (
-    <View style={[styles.footer, { borderTopColor: p.borderSoft }]}>
+    <View style={[styles.footer, { borderTopColor: p.borderSoft, backgroundColor: p.bg }]}>
       <Text style={{ fontFamily: font.regular, fontSize: 11, color: p.textFaint }}>
         جداول · همه داده‌ها روی دستگاه شما می‌ماند
       </Text>
@@ -245,8 +245,9 @@ const styles = StyleSheet.create({
   },
   fabGlow: {
     position: 'absolute',
-    bottom: 26,
+    bottom: 24,
     start: 20,
+    zIndex: 30,
     shadowColor: '#22D3EE',
     shadowOpacity: 0.5,
     shadowRadius: 18,
@@ -288,8 +289,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 18,
+    paddingBottom: Platform.OS === 'web' ? ('calc(14px + env(safe-area-inset-bottom, 0px))' as any) : 18,
     borderTopWidth: 1,
+    zIndex: 10,
   },
 });
 

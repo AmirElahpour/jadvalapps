@@ -1,0 +1,32 @@
+{
+  "short_name": "جداول",
+  "name": "جداول - برنامه‌ساز هفتگی دانشجو",
+  "description": "برنامه هفتگی دانشجو، فارسی و راست‌به‌چپ",
+  "icons": [
+    {
+      "src": "/jadvalapps/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/jadvalapps/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/jadvalapps/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/jadvalapps/",
+  "background_color": "#0A0E1A",
+  "theme_color": "#0A0E1A",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "fa",
+  "dir": "rtl"
+}
