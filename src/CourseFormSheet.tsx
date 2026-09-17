@@ -295,23 +295,25 @@ function ToggleSwitch({
 
   const trackBg = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [mode === 'dark' ? '#2A374F' : '#CBD5E1', p.primary],
+    outputRange: [mode === 'dark' ? '#242F46' : '#CBD5E1', p.primary],
   });
 
   const thumbLeft = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [3, 23],
+    outputRange: [3, 25],
   });
 
   return (
     <View
+      // @ts-ignore
+      dir="ltr"
       style={{
-        width: 48,
+        width: 50,
         height: 28,
         borderRadius: 14,
         backgroundColor: trackBg as any,
-        justifyContent: 'center',
         position: 'relative',
+        overflow: 'hidden',
       }}
     >
       <Animated.View
@@ -321,6 +323,7 @@ function ToggleSwitch({
           borderRadius: 11,
           backgroundColor: '#FFFFFF',
           position: 'absolute',
+          top: 3,
           left: thumbLeft,
           shadowColor: '#000',
           shadowOpacity: 0.25,
