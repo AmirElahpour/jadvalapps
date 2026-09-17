@@ -209,7 +209,7 @@ export function AppFooter() {
   const { p, font } = useTheme();
   return (
     <View style={[styles.footer, { borderTopColor: p.borderSoft, backgroundColor: p.bg }]}>
-      <Text style={{ fontFamily: font.regular, fontSize: 11, color: p.textFaint }}>
+      <Text style={{ fontFamily: font.regular, fontSize: 10.5, color: p.textFaint }}>
         جداول · همه داده‌ها روی دستگاه شما می‌ماند
       </Text>
     </View>
@@ -287,9 +287,9 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: Platform.OS === 'web' ? ('calc(14px + env(safe-area-inset-bottom, 0px))' as any) : 18,
+    paddingHorizontal: 12,
+    paddingTop: 5,
+    paddingBottom: Platform.OS === 'web' ? ('calc(5px + env(safe-area-inset-bottom, 0px))' as any) : 6,
     borderTopWidth: 1,
     zIndex: 10,
   },

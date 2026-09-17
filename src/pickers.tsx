@@ -59,26 +59,58 @@ function Wheel({
 }) {
   const { p, font } = useTheme();
   const listRef = useRef<FlatList<string>>(null);
-  const dragging = useRef(false);
-  const settled = useRef(selected);
+  const isInternalScroll = useRef(false);
+  const currentSelectedRef = useRef(selected);
+  const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync external value changes (preset taps, tap-to-select) into scroll position
+  // Sync external value changes (preset taps, initial open) into scroll position
   useEffect(() => {
-    settled.current = selected;
-    if (!dragging.current) {
-      listRef.current?.scrollToOffset({ offset: selected * ITEM_H, animated: true });
+    if (selected !== currentSelectedRef.current) {
+      currentSelectedRef.current = selected;
+      if (!isInternalScroll.current) {
+        listRef.current?.scrollToOffset({ offset: selected * ITEM_H, animated: true });
+      }
     }
-  }, [selected, items.length]);
+  }, [selected]);
 
-  // Drag-end and momentum-end both fire for one gesture; the second is a no-op.
-  const settle = (offset: number) => {
-    dragging.current = false;
-    const i = clamp(Math.round(offset / ITEM_H), 0, items.length - 1);
-    if (i !== settled.current) {
-      settled.current = i;
+  useEffect(() => {
+    // Initial scroll sync on mount
+    const t = setTimeout(() => {
+      listRef.current?.scrollToOffset({ offset: selected * ITEM_H, animated: false });
+    }, 40);
+    return () => {
+      clearTimeout(t);
+      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+    };
+  }, []);
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = e.nativeEvent.contentOffset.y;
+    const i = clamp(Math.round(y / ITEM_H), 0, items.length - 1);
+    isInternalScroll.current = true;
+    if (i !== currentSelectedRef.current) {
+      currentSelectedRef.current = i;
       tap();
       onSelect(i);
     }
+    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+    scrollTimeout.current = setTimeout(() => {
+      isInternalScroll.current = false;
+      listRef.current?.scrollToOffset({ offset: i * ITEM_H, animated: true });
+    }, 100);
+  };
+
+  const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+    const y = e.nativeEvent.contentOffset.y;
+    const i = clamp(Math.round(y / ITEM_H), 0, items.length - 1);
+    isInternalScroll.current = false;
+    if (i !== currentSelectedRef.current) {
+      currentSelectedRef.current = i;
+      tap();
+      onSelect(i);
+    }
+    listRef.current?.scrollToOffset({ offset: i * ITEM_H, animated: true });
   };
 
   return (
@@ -116,7 +148,9 @@ function Wheel({
             return (
               <Pressable
                 onPress={() => {
-                  settled.current = index;
+                  if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+                  isInternalScroll.current = false;
+                  currentSelectedRef.current = index;
                   tap();
                   onSelect(index);
                   listRef.current?.scrollToOffset({ offset: index * ITEM_H, animated: true });
@@ -153,15 +187,9 @@ function Wheel({
           ListFooterComponent={<View style={{ height: ITEM_H }} />}
           getItemLayout={(_, i) => ({ length: ITEM_H, offset: ITEM_H * (i + 1), index: i })}
           initialScrollIndex={clamp(selected, 0, items.length - 1)}
-          onScrollBeginDrag={() => {
-            dragging.current = true;
-          }}
-          onMomentumScrollEnd={(e: NativeSyntheticEvent<NativeScrollEvent>) =>
-            settle(e.nativeEvent.contentOffset.y)
-          }
-          onScrollEndDrag={(e: NativeSyntheticEvent<NativeScrollEvent>) =>
-            settle(e.nativeEvent.contentOffset.y)
-          }
+          onScroll={handleScroll}
+          onMomentumScrollEnd={handleScrollEnd}
+          onScrollEndDrag={handleScrollEnd}
         />
         {/* Edge fade masks */}
         <LinearGradient
