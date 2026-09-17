@@ -27,6 +27,7 @@ export interface Course {
   name: string;
   professor: string;
   units: number;
+  location?: string;
   exam_date: string | null; // Jalali 'YYYY-MM-DD' (e.g. '1404-09-20') or null
   exam_time: string | null; // 'HH:mm' or null
   sessions: Session[];
@@ -502,6 +503,7 @@ export function validateImported(data: unknown): Course[] {
       name: String(c.name ?? ''),
       professor: String(c.professor ?? ''),
       units: Number(c.units) || 0,
+      location: typeof c.location === 'string' && c.location.trim() ? c.location.trim() : undefined,
       exam_date: typeof c.exam_date === 'string' ? c.exam_date : null,
       exam_time: typeof c.exam_time === 'string' ? c.exam_time : null,
       sessions,

@@ -44,6 +44,7 @@ interface DraftState {
   name: string;
   professor: string;
   units: string;
+  location: string;
   color: string | null; // null = auto (hash from code|name)
   hasExam: boolean;
   exam: { jy: number; jm: number; jd: number };
@@ -58,6 +59,7 @@ function freshDraft(): DraftState {
     name: '',
     professor: '',
     units: '',
+    location: '',
     color: null,
     hasExam: false,
     exam: { jy: t.jy, jm: t.jm, jd: t.jd },
@@ -72,6 +74,7 @@ function draftFromCourse(c: Course): DraftState {
   d.name = c.name;
   d.professor = c.professor;
   d.units = c.units ? String(c.units) : '';
+  d.location = c.location ?? '';
   d.color = c.color && isHexColor(c.color) ? c.color : null;
   d.hasExam = !!c.exam_date;
   if (c.exam_date) {
@@ -508,6 +511,7 @@ function CourseFormSheetInner({
     name: draft.name.trim(),
     professor: draft.professor.trim(),
     units: parsePositiveInt(draft.units, 0),
+    location: draft.location.trim() || undefined,
     color: draft.color ?? undefined,
     exam_date: draft.hasExam
       ? `${draft.exam.jy}-${String(draft.exam.jm).padStart(2, '0')}-${String(draft.exam.jd).padStart(2, '0')}`
@@ -619,6 +623,13 @@ function CourseFormSheetInner({
           error={errors.units}
           required
           numeric
+        />
+        <Field
+          label="محل برگزاری کلاس"
+          value={draft.location}
+          onChangeText={(t) => setS({ location: t })}
+          placeholder="مثلاً کلاس ۱۰۴، دانشکده مهندسی"
+          optional
         />
 
         {/* ---- Color ---- */}

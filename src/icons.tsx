@@ -160,3 +160,11 @@ export const IconBook = (p: IconProps) => (
     <Path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
   </Svg>
 );
+
+export const IconMapPin = (p: IconProps) => (
+  <Svg {...base(p)}>
+    <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+    <Circle cx="12" cy="10" r="3" />
+  </Svg>
+);
+

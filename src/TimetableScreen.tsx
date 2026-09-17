@@ -17,7 +17,7 @@ import {
   formatJalali,
   COURSE_SWATCHES,
 } from './logic';
-import { IconClock, IconCalendar, IconBook, IconInfo } from './icons';
+import { IconClock, IconCalendar, IconBook, IconInfo, IconMapPin } from './icons';
 
 export function DayTabs({ selected, onSelect }: { selected: Day; onSelect: (d: Day) => void }) {
   const { p, font, radius } = useTheme();
@@ -154,6 +154,14 @@ export function SessionList({ day, onOpenCourse }: { day: Day; onOpenCourse: (id
                     </Text>
                   </View>
                 ) : null}
+                {course.location ? (
+                  <View style={styles.metaChip}>
+                    <IconMapPin size={12} color={p.textFaint} />
+                    <Text style={{ fontFamily: font.regular, fontSize: 12, color: p.textDim }} numberOfLines={1}>
+                      {course.location}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             </View>
           </Pressable>
@@ -204,6 +212,9 @@ export function CourseDetailSheet({
       <View style={[styles.detailCard, { backgroundColor: p.surfaceAlt, borderRadius: radius.lg }]}>
         <DetailRow icon={<IconInfo size={15} color={p.textDim} />} label="استاد" value={course.professor || '—'} />
         <DetailRow icon={<IconBook size={15} color={p.textDim} />} label="واحد" value={toPersianDigits(course.units)} />
+        {course.location ? (
+          <DetailRow icon={<IconMapPin size={15} color={p.textDim} />} label="محل کلاس" value={course.location} />
+        ) : null}
         <DetailRow
           icon={<IconCalendar size={15} color={p.textDim} />}
           label="آزمون"
