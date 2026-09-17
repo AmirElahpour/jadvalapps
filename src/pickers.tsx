@@ -13,6 +13,8 @@ import {
   FlatList,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Platform,
+  I18nManager,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -221,7 +223,14 @@ export function TimePicker2({
           </Text>
         </View>
         <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={{ fontFamily: font.black, fontSize: 30, color: p.text }}>
+          <Text
+            style={{
+              fontFamily: font.black,
+              fontSize: 30,
+              color: p.text,
+              writingDirection: 'ltr',
+            }}
+          >
             {toPersianDigits(p2(hour))}
             <Text style={{ color: p.primary }}>:</Text>
             {toPersianDigits(p2(minute))}
@@ -230,8 +239,16 @@ export function TimePicker2({
         <View style={{ width: 56 }} />
       </View>
 
-      {/* Wheels — RTL: hour column on the RIGHT, minutes on the LEFT */}
-      <View style={[tp.wheelsRow, { borderTopColor: p.borderSoft, borderTopWidth: 1 }]}>
+      {/* Wheels — Digital time format: Hour on the LEFT, Minute on the RIGHT */}
+      <View
+        // @ts-ignore
+        dir="ltr"
+        style={[
+          tp.wheelsRow,
+          { borderTopColor: p.borderSoft, borderTopWidth: 1 },
+          Platform.OS !== 'web' && I18nManager.isRTL ? { flexDirection: 'row-reverse' } : { flexDirection: 'row' },
+        ]}
+      >
         <View style={tp.wheelCol}>
           <Wheel items={HOURS} selected={hour} onSelect={(i) => onChange(i, minute)} width={86} />
           <Text style={[tp.wheelLabel, { fontFamily: font.medium, color: p.textFaint }]}>ساعت</Text>

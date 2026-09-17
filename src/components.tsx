@@ -55,13 +55,13 @@ export function ModalSheet({
 
   const pan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_e, g) => g.dy > 6 && Math.abs(g.dx) < g.dy,
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_e, g) => g.dy > 4 && Math.abs(g.dx) < g.dy,
       onPanResponderMove: (_e, g) => {
         if (g.dy > 0) drag.setValue(g.dy);
       },
       onPanResponderRelease: (_e, g) => {
-        if (g.dy > 110) onClose();
+        if (g.dy > 80) onClose();
         else Animated.spring(drag, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
       },
     })
@@ -89,9 +89,11 @@ export function ModalSheet({
               transform: [{ translateY }],
             },
           ]}
-          {...(full ? pan.panHandlers : {})}
         >
-          <View style={[styles.grabber, { backgroundColor: p.border }]} />
+          {/* Draggable slider handle at the top */}
+          <View style={styles.handleContainer} {...pan.panHandlers}>
+            <View style={[styles.grabber, { backgroundColor: p.border }]} />
+          </View>
           {title ? (
             <Text style={[styles.sheetTitle, { fontFamily: font.bold, color: p.text }]}>{title}</Text>
           ) : null}
@@ -255,7 +257,14 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   sheetFull: { height: H * 0.94 },
-  grabber: { alignSelf: 'center', width: 44, height: 4, borderRadius: 2, marginTop: 4, marginBottom: 10 },
+  handleContainer: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 4,
+    paddingBottom: 10,
+  },
+  grabber: { alignSelf: 'center', width: 48, height: 5, borderRadius: 3 },
   sheetTitle: { fontSize: 17, marginBottom: 10, textAlign: 'right' },
   btn: {
     flexDirection: 'row',
