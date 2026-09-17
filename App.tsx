@@ -131,65 +131,85 @@ function Shell() {
     }
   };
 
+  const outerBg = mode === 'dark' ? '#070A13' : '#F0F4F8';
+
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: p.bg }]}>
-      <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={p.bg} />
-      <NavigationBar style={navBarStyle} />
-      <AppHeader
-        onToggleTheme={toggle}
-        onOpenExport={() => setShowExport(true)}
-        onOpenAbout={() => setShowAbout(true)}
-      />
-      <StatsRow />
-      <DayTabs selected={selectedDay} onSelect={setSelectedDay} />
-      <View style={{ flex: 1, position: 'relative' }}>
-        <SessionList day={selectedDay} onOpenCourse={(id) => store.setSelectedCourseId(id)} />
-        <Fab onPress={openAdd} />
-      </View>
+    <View style={[styles.viewport, { backgroundColor: outerBg }]}>
+      <SafeAreaView
+        style={[
+          styles.root,
+          {
+            backgroundColor: p.bg,
+            borderColor: p.borderSoft,
+            ...(Platform.OS === 'web'
+              ? ({
+                  boxShadow:
+                    mode === 'dark'
+                      ? '0 0 35px rgba(0, 0, 0, 0.45)'
+                      : '0 0 25px rgba(0, 0, 0, 0.08)',
+                } as any)
+              : {}),
+          },
+        ]}
+      >
+        <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={p.bg} />
+        <NavigationBar style={navBarStyle} />
+        <AppHeader
+          onToggleTheme={toggle}
+          onOpenExport={() => setShowExport(true)}
+          onOpenAbout={() => setShowAbout(true)}
+        />
+        <StatsRow />
+        <DayTabs selected={selectedDay} onSelect={setSelectedDay} />
+        <View style={{ flex: 1, position: 'relative' }}>
+          <SessionList day={selectedDay} onOpenCourse={(id) => store.setSelectedCourseId(id)} />
+          <Fab onPress={openAdd} />
+        </View>
 
-      <AppFooter />
+        <AppFooter />
 
-      <CourseDetailSheet
-        courseId={selectedCourseId}
-        onClose={() => store.setSelectedCourseId(null)}
-        onEdit={(c) => {
-          store.setSelectedCourseId(c.id);
-          setShowForm(true);
-        }}
-        onDelete={(c) => setDeleteTarget(c)}
-      />
+        <CourseDetailSheet
+          courseId={selectedCourseId}
+          onClose={() => store.setSelectedCourseId(null)}
+          onEdit={(c) => {
+            store.setSelectedCourseId(c.id);
+            setShowForm(true);
+          }}
+          onDelete={(c) => setDeleteTarget(c)}
+        />
 
-      <CourseFormSheet
-        visible={showForm}
-        editing={editing}
-        courses={courses}
-        unitsCap={unitsCap}
-        onClose={() => {
-          setShowForm(false);
-          if (store.selectedCourseId != null) store.setSelectedCourseId(null);
-        }}
-        onSave={handleSave}
-        onCancelEdit={handleCancelEdit}
-        toast={toast}
-      />
+        <CourseFormSheet
+          visible={showForm}
+          editing={editing}
+          courses={courses}
+          unitsCap={unitsCap}
+          onClose={() => {
+            setShowForm(false);
+            if (store.selectedCourseId != null) store.setSelectedCourseId(null);
+          }}
+          onSave={handleSave}
+          onCancelEdit={handleCancelEdit}
+          toast={toast}
+        />
 
-      <ExportPanel
-        visible={showExport}
-        onClose={() => setShowExport(false)}
-        toast={toast}
-      />
+        <ExportPanel
+          visible={showExport}
+          onClose={() => setShowExport(false)}
+          toast={toast}
+        />
 
-      <DeleteConfirm
-        visible={!!deleteTarget}
-        courseName={deleteTarget?.name ?? ''}
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={confirmDelete}
-      />
+        <DeleteConfirm
+          visible={!!deleteTarget}
+          courseName={deleteTarget?.name ?? ''}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+        />
 
-      <Welcome visible={showWelcome} onDone={() => { setShowWelcome(false); store.setWelcomeSeen(true); }} />
-      <About visible={showAbout} onClose={() => setShowAbout(false)} />
-      <ToastStack toasts={toasts} />
-    </SafeAreaView>
+        <Welcome visible={showWelcome} onDone={() => { setShowWelcome(false); store.setWelcomeSeen(true); }} />
+        <About visible={showAbout} onClose={() => setShowAbout(false)} />
+        <ToastStack toasts={toasts} />
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -334,9 +354,21 @@ function BootGate({ fontsLoaded }: { fontsLoaded: boolean }) {
 // a fixed deep-navy brand look with a system font.
 function BootSplash() {
   return (
-    <View style={{ flex: 1, backgroundColor: '#0B1224', alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: 34, fontWeight: '800', color: '#EDF2FB' }}>جداول</Text>
-      <Text style={{ fontSize: 14, color: '#93A4C6', marginTop: 8 }}>برنامه‌ساز هفتگی دانشجو</Text>
+    <View style={[styles.viewport, { backgroundColor: '#070A13' }]}>
+      <View
+        style={[
+          styles.root,
+          {
+            backgroundColor: '#0B1224',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderColor: 'rgba(255,255,255,0.06)',
+          },
+        ]}
+      >
+        <Text style={{ fontSize: 34, fontWeight: '800', color: '#EDF2FB' }}>جداول</Text>
+        <Text style={{ fontSize: 14, color: '#93A4C6', marginTop: 8 }}>برنامه‌ساز هفتگی دانشجو</Text>
+      </View>
     </View>
   );
 }
@@ -346,7 +378,23 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  viewport: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  root: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 500,
+    height: '100%',
+    borderLeftWidth: Platform.OS === 'web' ? 1 : 0,
+    borderRightWidth: Platform.OS === 'web' ? 1 : 0,
+    position: 'relative',
+    overflow: 'hidden',
+  },
   statsCard: {
     marginHorizontal: 12,
     marginTop: 4,

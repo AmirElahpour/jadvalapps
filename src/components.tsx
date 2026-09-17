@@ -84,6 +84,7 @@ export function ModalSheet({
             full && styles.sheetFull,
             {
               backgroundColor: p.bg2,
+              borderColor: p.border,
               borderTopColor: p.border,
               borderRadius: radius.xl,
               transform: [{ translateY }],
@@ -279,13 +280,21 @@ export function Field({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center', // Centers sheet on wide screens
+  },
   sheet: {
+    width: '100%',
+    maxWidth: 500, // Compact mobile layout on desktop
     paddingHorizontal: 18,
     paddingTop: 10,
     paddingBottom: 26,
-    maxHeight: H * 0.86,
+    maxHeight: H * 0.88,
     borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
   },
   sheetFull: { height: H * 0.94 },
   handleContainer: {
