@@ -2,10 +2,8 @@
  * Export / Import / Share panel — share link, PDF, PNG, JSON backup + restore.
  */
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Share, Animated, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, Share, Platform, Animated, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import { useTheme } from './themeContext';
 import { useStore } from './store';
 import { ModalSheet } from './components';
@@ -24,6 +22,8 @@ import {
   captureViewToPng,
   buildShareLink,
   saveOrShareFile,
+  saveTextFile,
+  pickJsonFile,
 } from './export';
 import { WeekGrid } from './WeekGrid';
 import {
@@ -50,11 +50,34 @@ export function ExportPanel({ visible, onClose, toast, gridRef, documentPicker }
   const [busy, setBusy] = useState<string | null>(null);
 
   const doShareLink = async () => {
+    if (courses.length === 0) {
+      toast('ابتدا درسی اضافه کنید', 'error');
+      return;
+    }
     setBusy('link');
     try {
-      const { url, short } = await buildShareLink(courses);
+      const { url } = await buildShareLink(courses);
+      if (Platform.OS === 'web') {
+        if (typeof navigator !== 'undefined' && (navigator as any).share) {
+          try {
+            await (navigator as any).share({
+              title: 'برنامه هفتگی کلاس‌ها',
+              text: 'برنامه هفتگی کلاس‌های من در جداول:\n' + url,
+            });
+            toast('لینک اشتراک ارسال شد', 'success');
+            return;
+          } catch (e: any) {
+            if (e?.name === 'AbortError') return;
+          }
+        }
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          await navigator.clipboard.writeText(url);
+          toast('لینک اشتراک در کلیپ‌بورد کپی شد', 'success');
+          return;
+        }
+      }
       await Share.share({ message: 'برنامه هفتگی من در JadvalApps:\n' + url });
-      toast(short ? 'لینک کوتاه ساخته شد' : 'لینک اشتراک ساخته شد', 'success');
+      toast('لینک اشتراک ساخته شد', 'success');
     } catch {
       toast('ساخت لینک ناموفق بود', 'error');
     } finally {
@@ -71,8 +94,12 @@ export function ExportPanel({ visible, onClose, toast, gridRef, documentPicker }
     try {
       const res = await exportPdf(courses);
       if (!res) throw new Error('pdf');
-      const out = await saveOrShareFile(res.uri, backupFileName('pdf'));
-      toast(out === 'shared' ? 'PDF آماده شد' : 'ارسال PDF لغو شد', out === 'shared' ? 'success' : 'info');
+      if (res.uri === 'web-printed') {
+        toast('کادر چاپ و ذخیره PDF باز شد', 'success');
+      } else {
+        const out = await saveOrShareFile(res.uri, backupFileName('pdf'));
+        toast(out === 'cancelled' ? 'ارسال PDF لغو شد' : 'PDF آماده شد', out === 'cancelled' ? 'info' : 'success');
+      }
     } catch {
       toast('ساخت PDF ناموفق بود', 'error');
     } finally {
@@ -90,7 +117,7 @@ export function ExportPanel({ visible, onClose, toast, gridRef, documentPicker }
       const uri = await captureViewToPng(gridRef);
       if (!uri) throw new Error('capture');
       const out = await saveOrShareFile(uri, backupFileName('png'));
-      toast(out === 'shared' ? 'تصویر آماده شد' : 'ارسال تصویر لغو شد', out === 'shared' ? 'success' : 'info');
+      toast(out === 'cancelled' ? 'ارسال تصویر لغو شد' : 'تصویر جدول آماده شد', out === 'cancelled' ? 'info' : 'success');
     } catch {
       toast('ساخت تصویر ناموفق بود', 'error');
     } finally {
@@ -99,15 +126,16 @@ export function ExportPanel({ visible, onClose, toast, gridRef, documentPicker }
   };
 
   const doJsonBackup = async () => {
+    if (courses.length === 0) {
+      toast('درسی برای پشتیبان‌گیری وجود ندارد', 'error');
+      return;
+    }
     setBusy('json');
     try {
       const fileName = backupFileName('json');
-      const fileUri = FileSystem.documentDirectory + fileName;
-      await FileSystem.writeAsStringAsync(fileUri, buildBackupJSON(courses), {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-      const out = await saveOrShareFile(fileUri, fileName);
-      toast(out === 'shared' ? 'پشتیبان JSON آماده شد' : 'اشتراک لغو شد', out === 'shared' ? 'success' : 'info');
+      const jsonContent = buildBackupJSON(courses);
+      const out = await saveTextFile(jsonContent, fileName);
+      toast(out === 'cancelled' ? 'پشتیبان‌گیری لغو شد' : 'فایل پشتیبان JSON آماده شد', out === 'cancelled' ? 'info' : 'success');
     } catch {
       toast('خروجی JSON ناموفق بود', 'error');
     } finally {
@@ -118,14 +146,11 @@ export function ExportPanel({ visible, onClose, toast, gridRef, documentPicker }
   const doRestore = async () => {
     setBusy('restore');
     try {
-      const picked = await documentPicker();
-      if (!picked) {
+      const text = await pickJsonFile();
+      if (!text) {
         setBusy(null);
         return;
       }
-      const text = await FileSystem.readAsStringAsync(picked.uri, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
       const restored = parseBackup(text);
       if (restored.length === 0) {
         toast('فایل هیچ درسی ندارد', 'error');
@@ -133,7 +158,7 @@ export function ExportPanel({ visible, onClose, toast, gridRef, documentPicker }
         return;
       }
       replaceCourses(restored);
-      toast(`${toPersianDigits(restored.length)} درس بازیابی شد`, 'success');
+      toast(`${toPersianDigits(restored.length)} درس با موفقیت بازیابی شد`, 'success');
       onClose();
     } catch (e) {
       toast(e instanceof Error && e.message ? e.message : 'بازیابی ناموفق بود', 'error');
@@ -167,6 +192,7 @@ export function ExportPanel({ visible, onClose, toast, gridRef, documentPicker }
               const v = parsePositiveInt(capText ?? '', 0);
               setUnitsCap(v);
               setCapText(null);
+              toast(v > 0 ? `سقف واحد روی ${toPersianDigits(v)} واحد تنظیم شد` : 'سقف واحد برداشته شد', 'success');
             }}
             style={[styles.restoreBtn, { backgroundColor: p.primary }]}
           >

@@ -33,6 +33,7 @@ import { CourseFormSheet } from './src/CourseFormSheet';
 import { ExportPanel } from './src/ExportPanel';
 import { WeekGrid } from './src/WeekGrid';
 import { Course, Day, nextId, toPersianDigits, totalUnits, timeToMinutes, DAYS } from './src/logic';
+import { parseShareLinkHash } from './src/export';
 import * as DocumentPickerLib from 'expo-document-picker';
 import { useFonts } from 'expo-font';
 import { I18nManager } from 'react-native';
@@ -75,6 +76,23 @@ function Shell() {
   useEffect(() => {
     if (hydrated) {
       if (!store.welcomeSeen) setShowWelcome(true);
+
+      // On web, detect if the page was opened with a shared schedule link hash (#...)
+      try {
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          const hash = window.location.hash;
+          if (hash && hash.length > 2) {
+            const imported = parseShareLinkHash(hash);
+            if (imported && imported.length > 0) {
+              store.replaceCourses(imported);
+              toast(`${toPersianDigits(imported.length)} درس از لینک اشتراک بارگذاری شد`, 'success');
+              if (window.history?.replaceState) {
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+              }
+            }
+          }
+        }
+      } catch {}
     }
   }, [hydrated]);
 
@@ -375,5 +393,5 @@ const styles = StyleSheet.create({
   barCol: { flex: 1, alignItems: 'center', gap: 5 },
   barTrack: { width: '70%', height: 44, justifyContent: 'flex-end', alignItems: 'center' },
   barDay: { fontSize: 9 },
-  offscreen: { position: 'absolute', top: -9999, left: 0, opacity: 0 },
+  offscreen: { position: 'absolute', left: -9999, top: 0, opacity: 1, zIndex: -999 },
 });

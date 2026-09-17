@@ -1,12 +1,14 @@
 /**
  * Export helpers: PNG capture, PDF generation, JSON backup, share links.
- * Handles Android file-save permission fallbacks via the share sheet.
+ * Fully supports Web (browser / iOS Safari / Android Chrome) and Native (Expo).
  */
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
+import * as DocumentPickerLib from 'expo-document-picker';
 import { captureRef } from 'react-native-view-shot';
+import html2canvas from 'html2canvas';
 import {
   deflateSync,
   inflateSync,
@@ -43,21 +45,38 @@ export function parseBackup(text: string): Course[] {
 // ---------- PNG capture ----------
 
 export async function captureViewToPng(viewRef: React.RefObject<View | null>): Promise<string | null> {
-  try {
-    const uri = await captureRef(viewRef.current, {
-      format: 'png',
-      quality: 1,
-      width: 1080,
-      result: 'tmpfile',
-    });
-    return uri ?? null;
-  } catch (e) {
-    console.warn('capture failed', e);
-    return null;
+  if (Platform.OS === 'web') {
+    try {
+      const el = viewRef.current as unknown as HTMLElement;
+      if (!el) return null;
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#0A0E1A',
+        logging: false,
+      });
+      return canvas.toDataURL('image/png');
+    } catch (e) {
+      console.warn('html2canvas capture failed', e);
+      return null;
+    }
+  } else {
+    try {
+      const uri = await captureRef(viewRef.current, {
+        format: 'png',
+        quality: 1,
+        width: 1080,
+        result: 'tmpfile',
+      });
+      return uri ?? null;
+    } catch (e) {
+      console.warn('capture failed', e);
+      return null;
+    }
   }
 }
 
-// ---------- File save with share-sheet fallback ----------
+// ---------- File save & download (Web + Native) ----------
 
 export function guessMime(fileName: string): string {
   if (fileName.endsWith('.json')) return 'application/json';
@@ -67,14 +86,151 @@ export function guessMime(fileName: string): string {
 }
 
 export async function saveOrShareFile(
-  uri: string,
+  uriOrData: string,
   fileName: string
-): Promise<'shared' | 'cancelled'> {
-  try {
-    await Sharing.shareAsync(uri, { mimeType: guessMime(fileName), dialogTitle: fileName });
-    return 'shared';
-  } catch {
-    return 'cancelled';
+): Promise<'shared' | 'downloaded' | 'cancelled'> {
+  if (Platform.OS === 'web') {
+    try {
+      const mime = guessMime(fileName);
+      let blob: Blob;
+      if (uriOrData.startsWith('data:')) {
+        const parts = uriOrData.split(',');
+        const byteString = atob(parts[1]);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        blob = new Blob([ab], { type: mime });
+      } else {
+        blob = await (await fetch(uriOrData)).blob();
+      }
+
+      // Try Web Share API if supported on mobile browser
+      if (typeof navigator !== 'undefined' && (navigator as any).canShare && (navigator as any).share) {
+        try {
+          const file = new File([blob], fileName, { type: mime });
+          if ((navigator as any).canShare({ files: [file] })) {
+            await (navigator as any).share({ files: [file], title: fileName });
+            return 'shared';
+          }
+        } catch (err: any) {
+          if (err?.name === 'AbortError') return 'cancelled';
+        }
+      }
+
+      // Fallback: trigger browser download
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      return 'downloaded';
+    } catch (e) {
+      console.warn('web save failed', e);
+      return 'cancelled';
+    }
+  } else {
+    try {
+      await Sharing.shareAsync(uriOrData, { mimeType: guessMime(fileName), dialogTitle: fileName });
+      return 'shared';
+    } catch {
+      return 'cancelled';
+    }
+  }
+}
+
+export async function saveTextFile(
+  content: string,
+  fileName: string
+): Promise<'shared' | 'downloaded' | 'cancelled'> {
+  if (Platform.OS === 'web') {
+    try {
+      const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+      if (typeof navigator !== 'undefined' && (navigator as any).canShare && (navigator as any).share) {
+        try {
+          const file = new File([blob], fileName, { type: 'application/json' });
+          if ((navigator as any).canShare({ files: [file] })) {
+            await (navigator as any).share({ files: [file], title: fileName });
+            return 'shared';
+          }
+        } catch (err: any) {
+          if (err?.name === 'AbortError') return 'cancelled';
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return 'downloaded';
+    } catch {
+      return 'cancelled';
+    }
+  } else {
+    try {
+      const dir = FileSystem.documentDirectory ?? FileSystem.cacheDirectory ?? '';
+      const fileUri = dir + fileName;
+      await FileSystem.writeAsStringAsync(fileUri, content, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      return await saveOrShareFile(fileUri, fileName);
+    } catch {
+      return 'cancelled';
+    }
+  }
+}
+
+// ---------- File picker (Web + Native) ----------
+
+export async function pickJsonFile(): Promise<string | null> {
+  if (Platform.OS === 'web') {
+    return new Promise((resolve) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,application/json';
+      input.style.display = 'none';
+      document.body.appendChild(input);
+
+      input.onchange = async () => {
+        const file = input.files?.[0];
+        document.body.removeChild(input);
+        if (!file) return resolve(null);
+        try {
+          const text = await file.text();
+          resolve(text);
+        } catch {
+          resolve(null);
+        }
+      };
+
+      input.oncancel = () => {
+        document.body.removeChild(input);
+        resolve(null);
+      };
+
+      input.click();
+    });
+  } else {
+    try {
+      const res = await DocumentPickerLib.getDocumentAsync({
+        copyToCacheDirectory: true,
+      });
+      if (res.canceled || !res.assets?.length) return null;
+      const uri = res.assets[0].uri;
+      const text = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      return text;
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -128,7 +284,7 @@ export async function exportPdf(courses: Course[]): Promise<{ uri: string } | nu
 <meta charset="utf-8" />
 <style>
   * { box-sizing: border-box; }
-  body { font-family: 'Vazirmatn', sans-serif; padding: 24px; color: #111C33; }
+  body { font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif; padding: 24px; color: #111C33; }
   h1 { font-size: 20px; margin: 0 0 4px; }
   .sub { color: #5A6B8F; font-size: 12px; margin-bottom: 16px; }
   table { width: 100%; border-collapse: collapse; font-size: 11px; }
@@ -151,12 +307,30 @@ export async function exportPdf(courses: Course[]): Promise<{ uri: string } | nu
   </table>
 </body>
 </html>`;
-  try {
-    const { uri } = await Print.printToFileAsync({ html });
-    return { uri };
-  } catch (e) {
-    console.warn('pdf failed', e);
-    return null;
+
+  if (Platform.OS === 'web') {
+    try {
+      await Print.printAsync({ html });
+      return { uri: 'web-printed' };
+    } catch {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => printWindow.print(), 300);
+        return { uri: 'web-printed' };
+      }
+      return null;
+    }
+  } else {
+    try {
+      const { uri } = await Print.printToFileAsync({ html });
+      return { uri };
+    } catch (e) {
+      console.warn('pdf failed', e);
+      return null;
+    }
   }
 }
 
@@ -169,25 +343,30 @@ export interface ShareLinkResult {
 
 /**
  * Build a share link carrying compressed course data.
- * Tries a short-link service; falls back to the direct compressed-data URL.
+ * Uses the live web app origin/path or fallback domain.
  */
 export async function buildShareLink(courses: Course[]): Promise<ShareLinkResult> {
   const json = JSON.stringify(courses);
   const packed = packData(json);
-  const direct = `https://jadvalapps.app/s#${packed}`;
+  let base = 'https://amirelahpour.github.io/jadvalapps/';
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.origin) {
+    base = window.location.origin + window.location.pathname;
+    if (!base.endsWith('/')) base += '/';
+  }
+  const direct = `${base}#${packed}`;
+
   try {
     const res = await fetch('https://spoo.me/shortener', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: 'url=' + encodeURIComponent(direct),
     });
-    if (!res.ok) throw new Error('shortener ' + res.status);
-    const data = (await res.json()) as { short_url?: string };
-    if (data?.short_url) return { url: data.short_url, short: true };
-    throw new Error('no short_url');
-  } catch {
-    return { url: direct, short: false };
-  }
+    if (res.ok) {
+      const data = (await res.json()) as { short_url?: string };
+      if (data?.short_url) return { url: data.short_url, short: true };
+    }
+  } catch {}
+  return { url: direct, short: false };
 }
 
 export function parseShareLinkHash(hash: string): Course[] | null {
